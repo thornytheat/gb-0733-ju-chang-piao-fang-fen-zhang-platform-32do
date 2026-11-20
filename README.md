@@ -1,6 +1,6 @@
 # 剧场票房分账台
 
-巡演票务财务可用五份 CSV 核对联票原分账、现场核销、停演冲正与场馆应收。首页提供样例预览、首次发布、同源重跑和凭证下载。
+巡演票务财务可用五份 CSV（可再附一份渠道服务费结算单）核对联票原分账、现场核销、停演冲正、场馆应收与场馆净应收。首页提供样例预览、首次发布、同源重跑和凭证下载。
 
 ## 启动与试用
 
@@ -8,7 +8,7 @@
 docker compose up --build
 ```
 
-打开 `http://localhost:18422`，选择「运行样例」。核销账、差额槽和结算账按相同场次顺序排列。点场次名称筛选「票房证据」，或从左侧切换业务模块。发布后可点「重跑」和「导出凭证」。通过「导入 CSV」可提交自己的五份报表，列定义见[数据字典](docs/DATA-DICTIONARY.md)。`/?run=sample` 始终可看内置样例预览。
+打开 `http://localhost:18422`，选择「运行样例」。核销账、差额槽和结算账按相同场次顺序排列，下方「场馆净应收」按场馆列出实际演出分成、应承担服务费和净应收。点场次名称筛选「票房证据」，或从左侧切换业务模块。发布后可点「重跑」和「导出凭证」。通过「导入 CSV」可提交自己的五份报表，并可选加 `fees.csv` 服务费结算单，列定义见[数据字典](docs/DATA-DICTIONARY.md)。`/?run=sample` 始终可看内置样例预览（含服务费）。
 
 本机可用 Python 3.12 启动。
 
@@ -29,11 +29,12 @@ python -m pytest -q
 | 入场核销 | 有效核销及保留、拒收依据 | `GET /api/scans/{run_id}` |
 | 权重分账 | 原分账、尾差排名与未分配票款 | `GET /api/allocation/{run_id}` |
 | 退款冲正 | 原分账限额、冲正与剩余额度 | `GET /api/refunds/{run_id}` |
-| 场馆勾稽 | 逐票、逐场、逐馆与源行核对 | `GET /api/reconcile/{run_id}` |
+| 服务费归属 | 整单服务费的场次份额、场馆承担与未落地去向 | `GET /api/fees/{run_id}` |
+| 场馆勾稽 | 逐票、逐场、逐馆与源行核对、场馆净应收 | `GET /api/reconcile/{run_id}` |
 | 结算凭证 | 运行清单、隔离行、凭证 ZIP | `GET /api/evidence/{run_id}` |
 
-各模块读取接口支持 `run_id=sample` 的预览和 `view`、`q`、`show`、`limit`、`offset` 查询。接口文档在 `/docs`。发布接口是 `POST /api/runs/sample` 与 `POST /api/runs`，重跑是 `POST /api/runs/{run_id}/rerun`，下载是 `GET /api/evidence/{run_id}/export`。
+各模块读取接口支持 `run_id=sample` 的预览和 `view`、`q`、`show`、`limit`、`offset` 查询。接口文档在 `/docs`。发布接口是 `POST /api/runs/sample`、`POST /api/runs/sample-fees` 与 `POST /api/runs`，重跑是 `POST /api/runs/{run_id}/rerun`，下载是 `GET /api/evidence/{run_id}/export`。
 
-单一账册保留首次发布的票款、权益和场次定义。修订用完整快照提交，允许更新核销，新增停演事实和退款。历史批次可重跑或导出，旧批次重跑不会回退当前账册。每个文件限 512 KiB 和 12,000 条逻辑行。本项目覆盖人民币停演退款和整套票按场分账。
+单一账册保留首次发布的票款、权益和场次定义。修订用完整快照提交，允许更新核销，新增停演事实、退款和服务费。历史批次可重跑或导出，旧批次重跑不会回退当前账册。每个文件限 512 KiB 和 12,000 条逻辑行。本项目覆盖人民币停演退款和整套票按场分账，以及渠道整单服务费按场馆实际演出归属。
 
 `app/modules` 放各业务规则，`sample_data` 放本机样例，`tests` 放业务与原子性回归。[规则与样例登记](docs/DEPTH.md)

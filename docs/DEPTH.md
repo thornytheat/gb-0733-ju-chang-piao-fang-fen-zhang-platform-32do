@@ -13,6 +13,7 @@
 | M5 退款冲正 | 逐笔核对停演冲正、限额与超领原因 | `GET /api/refunds/{run_id}` | `app/modules/m5_refunds/rules.py` `app/modules/m5_refunds/service.py` | `tests/test_refunds.py` |
 | M6 场馆勾稽 | 对照双账并按票、场馆、源文件复核 | `GET /api/reconcile/{run_id}` | `app/modules/m6_reconcile/ledger.py` `app/modules/m6_reconcile/service.py` | `tests/test_reconcile.py` |
 | M7 结算凭证 | 查看原因码分布与源清单，下载可重算凭证 | `GET /api/evidence/{run_id}`、`GET /api/evidence/{run_id}/export` | `app/modules/m7_evidence/bundle.py` `app/modules/m7_evidence/csv_out.py` | `tests/test_evidence.py` |
+| M8 服务费归属 | 整单服务费按场次份额落到场馆，未落地注明去向 | `GET /api/fees/{run_id}` | `app/modules/m8_fees/rules.py` `app/modules/m8_fees/service.py` | `tests/test_fees.py` |
 
 ## 陷阱登记
 
@@ -34,7 +35,13 @@
 | TRAP-23 | scans.csv 含起点和关闭时刻 | 边界二次入账 | 半开核销窗 | `app/modules/m3_scans/service.py` | `tests/test_scans.py::test_window_start_is_inclusive_and_close_exclusive` |
 | TRAP-24 | tickets.csv 的 00107 拆给相同权重 | 三场取整后少分或多分 | 最大余数与场次键裁决 | `app/modules/m4_allocation/rules.py` | `tests/test_allocation.py::test_equal_remainders_use_stable_show_key_and_conserve` |
 | TRAP-26 | 以 refunds.csv 已发布样例为基准提交仅表头快照 | 原退款被旧表清除 | 校验已过账冲正都保留 | `app/modules/m5_refunds/service.py` | `tests/test_refunds.py::test_previous_approval_cannot_be_erased_by_stale_submission` |
+| TRAP-27 | fees.csv 一笔整单服务费覆盖多场馆 | 整单平均或全额压给某一场馆 | 按原分账权重切场次份额，份额和等于整单金额 | `app/modules/m8_fees/service.py` | `tests/test_fees.py::test_fee_statement_is_split_by_original_weight_without_rewriting_total` |
+| TRAP-28 | 停演场次仍挂在整张套票的服务费里 | 停演场也向场馆扣服务费 | 停演份额不落任何场馆，原因 `FEE_CANCELLED_SHOW` 转未落地 | `app/modules/m8_fees/service.py` | `tests/test_fees.py::test_cancelled_show_share_is_not_charged_to_any_venue` |
+| TRAP-29 | 同票有场次未实际入场 | 未核销份额摊给其他场馆 | 未入场份额转未落地，原因 `FEE_AWAITING_SCAN` | `app/modules/m8_fees/service.py` | `tests/test_fees.py::test_unattended_show_share_stays_unlanded_with_reason` |
+| TRAP-30 | 同一结算单重跑或重复导出 | 服务费被重复扣减 | 运行编号幂等复用，重跑不生成新扣款 | `app/modules/m8_fees/service.py`、`app/store.py` | `tests/test_fees.py::test_same_statement_rerun_does_not_double_charge` |
+| TRAP-31 | 修订提交遗漏已入账服务费 | 净应收被旧表静默改写 | 校验已入账服务费保留，返回 `FEE_CHANGED`，旧净额可查 | `app/modules/m8_fees/service.py` | `tests/test_fees.py::test_failed_fee_revision_keeps_previous_net_receivable_readable` |
+| TRAP-32 | 退票后整单服务费仍按原额 | 已退票仍承担全额服务费 | 服务费只按原分账份额归属，退款不改写整单金额，差额留未落地 | `app/modules/m8_fees/service.py` | `tests/test_fees.py::test_venue_net_receivable_subtracts_only_landed_fee` |
 
 ## 对账规则
 
-源逻辑行按采信、隔离、空行、表头解释完毕。实收分等于原分账与未分配票款之和，扣除停演退款后等于场馆应收与未结余额之和。额外覆盖逐票守恒、限额、跨场馆汇总和故障注入。
+源逻辑行按采信、隔离、空行、表头解释完毕。实收分等于原分账与未分配票款之和，扣除停演退款后等于场馆应收与未结余额之和。整单服务费等于落地到场馆的份额与未落地份额之和，未落地按停演、未核销、无原分账分别汇总。额外覆盖逐票守恒、限额、跨场馆汇总和故障注入。

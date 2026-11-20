@@ -1,7 +1,7 @@
 import csv
 import io
 
-from app.config import MAX_SOURCE_BYTES, MAX_SOURCE_ROWS, SOURCE_COLUMNS
+from app.config import ALL_SOURCES, MAX_SOURCE_BYTES, MAX_SOURCE_ROWS
 from app.errors import Problem
 from app.records import SourceRow
 
@@ -22,7 +22,7 @@ def read_source(data, name, stats, isolates):
     if not text:
         raise Problem(422, 'FILE_EMPTY', {'source': name})
     stats.update(encoding=encoding, status='HEADER_ONLY', rows=0, blank=0, headers=0)
-    columns = SOURCE_COLUMNS[name]
+    columns = ALL_SOURCES[name]
     reader = csv.reader(io.StringIO(text, newline=''), strict=True)
     header = None
     try:

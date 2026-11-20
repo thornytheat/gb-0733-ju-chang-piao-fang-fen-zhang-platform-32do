@@ -17,3 +17,8 @@ SOURCE_COLUMNS = {
     'scans.csv': ('scan_id', 'ticket', 'show', 'scanned_at', 'gate'),
     'refunds.csv': ('refund_id', 'ticket', 'show', 'refunded_at', 'amount', 'unit'),
 }
+# 渠道按整张套票出账的服务费结算单是可选的第六份报表。
+OPTIONAL_SOURCES = {
+    'fees.csv': ('statement_id', 'ticket', 'billed_at', 'amount', 'unit'),
+}
+ALL_SOURCES = {**SOURCE_COLUMNS, **OPTIONAL_SOURCES}

@@ -153,7 +153,7 @@ for (const button of document.querySelectorAll('button[data-show]')) {
 showFilter.addEventListener('click', () => { markShow(''); offset = 0; refresh(); });
 $('#evidence-filters').addEventListener('submit', event => { event.preventDefault(); offset = 0; refresh(); });
 options.addEventListener('change', () => {
-  if (['venues', 'sources', 'tickets'].includes(options.value)) markShow('');
+  if (['venues', 'sources', 'tickets', 'fee_venues'].includes(options.value)) markShow('');
   offset = 0;
   refresh();
 });

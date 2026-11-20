@@ -16,7 +16,7 @@ h1, h2, h3, p { margin: 0; }
 .batchline { min-height: 37px; margin-bottom: calc(-1 * var(--gap)); display: flex; align-items: center; gap: 18px; flex-wrap: wrap; color: var(--ink-2); font-size: 11px; }
 .batchline output { margin-left: auto; color: var(--ok); }
 .batchline output.is-error { color: var(--bad); }
-.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
 .kpi { padding: 11px 13px; min-width: 0; }
 .kpi + .kpi { border-left: 1px solid var(--line); }
 .kpi--focus { background: var(--accent-soft); color: var(--accent-ink); }

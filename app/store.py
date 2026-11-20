@@ -5,9 +5,20 @@ from pathlib import Path
 
 from app.errors import Problem
 from app.manifest import canonical, input_manifest, run_identifier
+from app.modules.m6_reconcile.service import apply_fee_views
+from app.modules.m8_fees.service import summarize
 from app.pipeline import compute
 
 SCHEMA = Path(__file__).with_name('schema.sql').read_text(encoding='utf-8')
+
+
+def upgrade(snapshot):
+    """旧批次没有服务费字段：补齐空视图，保证净应收页面与凭证仍可读。"""
+    if 'fees' not in snapshot:
+        snapshot['fees'] = summarize([])
+    if 'fee_venues' not in snapshot['funding']:
+        apply_fee_views(snapshot['funding'], snapshot['fees'])
+    return snapshot
 
 
 class Store:
@@ -32,14 +43,14 @@ class Store:
             else:
                 row = db.execute('SELECT payload FROM runs WHERE book = ? ORDER BY sequence DESC LIMIT 1',
                                  (book,)).fetchone()
-        return json.loads(row[0]) if row else None
+        return upgrade(json.loads(row[0])) if row else None
 
     def get(self, run_id):
         with closing(self.connect()) as db:
             row = db.execute('SELECT payload FROM runs WHERE id = ?', (run_id,)).fetchone()
         if not row:
             raise Problem(404, 'RUN_NOT_FOUND', {'run_id': run_id})
-        return json.loads(row[0])
+        return upgrade(json.loads(row[0]))
 
     def inputs(self, run_id):
         with closing(self.connect()) as db:

@@ -2,7 +2,7 @@ import hashlib
 import json
 from datetime import UTC, datetime
 
-from app.config import RULE_VERSION, SOURCE_COLUMNS
+from app.config import ALL_SOURCES, RULE_VERSION, SOURCE_COLUMNS
 from app.errors import Problem
 
 
@@ -15,10 +15,10 @@ def canonical(value):
 
 
 def input_manifest(sources):
-    if set(sources) != set(SOURCE_COLUMNS):
+    if not set(SOURCE_COLUMNS) <= set(sources) or not set(sources) <= set(ALL_SOURCES):
         raise Problem(422, 'SOURCE_SET', {'expected': list(SOURCE_COLUMNS)})
     return [{'source': name, 'sha256': checksum(sources[name]), 'bytes': len(sources[name])}
-            for name in SOURCE_COLUMNS]
+            for name in ALL_SOURCES if name in sources]
 
 
 def run_identifier(book, inputs):

@@ -9,5 +9,7 @@ router = APIRouter(prefix='/api/reconcile')
 def reconcile(request: Request, run_id: str, browse: Browse = Depends()):
     funding = snapshot_for(request, run_id)['funding']
     rows = browse.choose({'accepted': funding['ledger'], 'tickets': funding['tickets'], 'venues': funding['venues'],
-                          'shows': funding['shows'], 'sources': funding['sources']})
-    return browse.page(rows, totals=funding['totals'], checks=funding['checks'], balanced=funding['balanced'])
+                          'shows': funding['shows'], 'sources': funding['sources'],
+                          'fee_venues': funding['fee_venues']})
+    return browse.page(rows, totals=funding['totals'], fee_totals=funding['fee_totals'],
+                       checks=funding['checks'], balanced=funding['balanced'])

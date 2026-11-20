@@ -67,3 +67,14 @@ dialog::backdrop { background: #20103360; }
 .import-form output { color: var(--bad); overflow-wrap: anywhere; }
 .import-form .btn { justify-self: end; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.net-area { min-width: 0; }
+.net-head { align-items: center; flex-wrap: wrap; }
+.net-title { display: flex; align-items: baseline; gap: 8px; }
+.net-title > span { color: var(--ink-2); font-size: 11px; }
+.net-totals { display: flex; align-items: center; gap: 14px; margin-left: auto; color: var(--ink-2); font-size: 11px; flex-wrap: wrap; }
+.net-totals strong { color: var(--ink); }
+.net-scroll { max-height: 260px; }
+.net-table th[scope="row"] { min-width: 130px; }
+.net-table .net-strong { font-weight: 700; color: var(--accent-ink); }
+.net-table tbody tr:hover { background: var(--accent-soft); }
+.net-table .show-link small { font-size: 10px; }

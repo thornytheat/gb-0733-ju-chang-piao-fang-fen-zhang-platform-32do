@@ -11,6 +11,23 @@ ALLOCATION = ('ticket', 'show', 'venue', 'weight', 'allocated_cents', 'floor_cen
 MONEY = ('allocated_cents', 'refunded_cents', 'net_cents', 'payable_cents', 'unsettled_cents')
 
 
+FEE_LINE = ('statement_id', 'ticket', 'billed_at', 'billed_cents')
+FEE_SHARE = ('statement_id', 'ticket', 'show', 'venue', 'weight', 'share_cents', 'landed', 'reason',
+             'right_line', 'show_line')
+
+
+def fee_tables(fees):
+    shares = [{**share, 'billed_at': line['billed_at']} for line in fees['lines'] for share in line['shares']]
+    return {
+        'fee-lines.csv': (fees['lines'], (*FEE_LINE, 'line', 'source', 'end_line', 'raw')),
+        'fee-shares.csv': (shares, FEE_SHARE),
+        'fee-unlanded.csv': (fees['unlanded'], (*FEE_SHARE, 'billed_at', 'line', 'source', 'end_line', 'raw')),
+        'fee-statements.csv': (fees['statements'], ('statement_id', 'line_count', 'billed_cents', 'landed_cents',
+                                                    'unlanded_cents', 'first_billed_at')),
+        'fee-venues.csv': (fees['venues'], ('venue', 'fee_cents', 'share_count')),
+    }
+
+
 def evidence_tables(snapshot):
     pub = snapshot['publication']
     accounts = snapshot['funding']
@@ -32,11 +49,16 @@ def evidence_tables(snapshot):
         'show-totals.csv': (accounts['shows'], ('show', 'title', 'venue', 'cancelled_at', 'scan_count', 'shares',
                                                *MONEY, 'gap_cents', 'difference_cents')),
         'venue-totals.csv': (accounts['venues'], ('venue', 'shows', 'scan_count', *MONEY)),
+        'venue-net-receivable.csv': (accounts['fee_venues'], ('venue', 'shows', 'scan_count', 'payable_cents',
+                                                             'fee_cents', 'net_receivable_cents', 'unsettled_cents',
+                                                             'cancelled_fee_cents', 'awaiting_fee_cents',
+                                                             'no_rights_fee_cents', 'unlanded_fee_cents')),
         'ticket-totals.csv': (accounts['tickets'], ('ticket', 'sale_line', 'paid_cents', 'refunded_cents',
                                                    'net_cents', 'payable_cents', 'unsettled_cents', 'difference_cents')),
         'source-counts.csv': (accounts['sources'], ('source', 'encoding', 'status', 'rows', 'headers', 'blank',
                                                    'accepted', 'isolated', 'difference')),
         'quarantine.csv': (quarantine, ('key', 'code', 'reason', *ORIGIN, 'detail')),
+        **fee_tables(snapshot['fees']),
     }
 
 
@@ -48,6 +70,7 @@ def build_bundle(snapshot, current, original):
         files[f'evidence/{name}'] = make_csv(rows, fields)
     manifest = {**snapshot['manifest'], 'original_inputs': snapshot['publication']['inputs'],
                 'checks': snapshot['funding']['checks'], 'totals': snapshot['funding']['totals'],
+                'fee_totals': snapshot['funding']['fee_totals'], 'fee_checks': snapshot['fees']['checks'],
                 'reason_counts': snapshot['reason_counts'], 'hashes': {name: checksum(data) for name, data in files.items()}}
     files['manifest.json'] = canonical(manifest)
     stream = io.BytesIO()

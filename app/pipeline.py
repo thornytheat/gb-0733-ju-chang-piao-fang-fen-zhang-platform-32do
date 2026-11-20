@@ -10,6 +10,7 @@ from app.modules.m3_scans.service import admit
 from app.modules.m4_allocation.service import allocate
 from app.modules.m5_refunds.service import preserve_approved, reverse
 from app.modules.m6_reconcile.service import count_sources, reconcile
+from app.modules.m8_fees.service import preserve_approved as preserve_fees, settle
 from app.records import Isolations
 from app.sources import SourceSet
 
@@ -31,13 +32,16 @@ def compute(book, run_id, files, publication=None, head=None):
         raise Problem(409, 'PUBLICATION_CHANGED', {'publication_id': publication['publication_id']})
     scans = admit(sources.rows('scans.csv'), tickets, shows, rights, isolates)
     refunds = reverse(sources.rows('refunds.csv'), tickets, shows, publication, isolates)
+    fees = settle(sources.rows('fees.csv'), tickets, shows, publication, scans, isolates)
     if head:
         preserve_approved(head['refunds'], refunds)
+        if 'fees' in head:
+            preserve_fees(head['fees']['lines'], fees['lines'])
     accepted = {'tickets.csv': len(tickets), 'shows.csv': len(shows), 'rights.csv': len(rights),
-                'scans.csv': len(scans), 'refunds.csv': len(refunds)}
+                'scans.csv': len(scans), 'refunds.csv': len(refunds), 'fees.csv': len(fees['lines'])}
     quarantine = sorted(isolates.rows, key=lambda row: (row['source'], row['line']))
     counts = count_sources(sources.stats, accepted, quarantine)
-    accounts = reconcile(tickets, shows, scans, refunds, publication, counts)
+    accounts = reconcile(tickets, shows, scans, refunds, publication, counts, fees)
     if not accounts['balanced']:
         raise Problem(409, 'RECONCILE_FAILED', accounts['checks'])
     manifest = {
@@ -50,4 +54,5 @@ def compute(book, run_id, files, publication=None, head=None):
     }
     return {'manifest': manifest, 'publication': publication, 'quarantine': quarantine, 'funding': accounts,
             'tickets': list(tickets.values()), 'shows': list(shows.values()), 'rights': rights, 'scans': scans,
-            'refunds': refunds, 'reason_counts': dict(sorted(Counter(row['code'] for row in quarantine).items()))}
+            'refunds': refunds, 'fees': fees,
+            'reason_counts': dict(sorted(Counter(row['code'] for row in quarantine).items()))}
